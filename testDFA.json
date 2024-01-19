@@ -1,0 +1,10 @@
+{
+	"states": ["1", "2"],
+	"input_symbols": ["a", "b", "c"],
+	"transitions": {
+		"1": {"a": "2", "b": "2", "c": "2"},
+		"2": {"a": "1", "b": "1", "c": "1"}
+	},
+	"initial_state": "1",
+	"final_states": ["2"]
+}
