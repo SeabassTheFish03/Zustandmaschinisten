@@ -14,7 +14,6 @@ def main():
 		rawJson = json.loads(f.read())
 
 	# TODO: Input validation. Ensure all things coming in from the json file are correctly typed and formatted
-	# TODO: Create setup.py with ability to input DFA
 	# TODO: Error handling and prettifying.
 	# 	Try to decipher what could go wrong with the DFA lib and translate to readable errors
 
