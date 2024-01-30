@@ -11,7 +11,13 @@ Phase 1 Projects:
 a. Create manim visualizations of a DFA. In other words, I should be able to input a DFA using automata-lib, and to have an animation that constructs the DFA one state at a time with transitions (in some specified order). This is harder than it seems; how to implement a directed graph (as manim only recently added them at my request), add transition labels, states and final states, etc. You will have to read over the documentation to find out how to modify the base representation of Manim objects. A starting implementation is in the manim-automata github repo.
 b. Create manim visualizations of a DFA running on an input string. What should be present are four screens that operate at the same time: (1) the DFA itself with a box around the current state, (2) a zoomed-in version of what state we are in, (3) the current input string along with what position in the string we are in, and (4) the transition table that highlights what state and symbol is currently being accessed.
 
+## To set up on your own device:
+This project is set up using a Conda environment, and the order of dependency install is
+`conda install -c conda-forge manim`
+`conda install conda-forge::miktex`
+`pip install automata-lib`
 
+The order is important because pip and Conda don't play well together. To use them together, Conda must be used first and pip must be used second.
 
 
 
