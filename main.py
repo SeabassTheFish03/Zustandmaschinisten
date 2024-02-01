@@ -10,12 +10,39 @@ class DFAScene(Scene):
 		self.rawJson = rawJson
 
 	def construct(self):
+		edge_config = {
+            "stroke_width": 2,
+            "tip_config": {
+                "tip_shape": ArrowSquareTip,
+                "tip_length": 0.15,
+            },
+            (3, 4): {
+                "color": RED,
+                "tip_config": {"tip_length": 0.25, "tip_width": 0.25}
+            },
+        }
+
 		vertices = self.rawJson["states"]
 		edges = JSONtoManimEdges(self.rawJson)
+		vertex_config = {
+			"radius": 0.3,
+			"stroke_color": "green",
+			"fill_color": "white",
+			"fill_opacity": 1
+		}
 
-		g = DiGraph(vertices, edges, labels=True)
+		g = DiGraph(
+			vertices,
+			edges,
+			labels=False,
+			layout="kamada_kawai",
+			edge_config=edge_config,
+			vertex_type=Circle,
+			vertex_config=vertex_config
+		).scale(1.4)
 
-		self.add(g)
+		self.play(Create(g))
+		self.wait()
 
 # This function just makes the edge list for displaying the dfa. It loses the input character
 def JSONtoManimEdges(rawJson): 
