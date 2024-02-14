@@ -50,7 +50,6 @@ class DFAScene(Scene):
 
 		vertex_config = {
 			"radius": 0.3,
-			"stroke_color": "green",
 			"fill_color": "white",
 			"fill_opacity": 1
 		}
@@ -58,15 +57,12 @@ class DFAScene(Scene):
 		g = DiGraph(
 			vertices,
 			edges,
-			#labels=True,
+			labels=True,
 			label_fill_color=BLACK,
 			layout="kamada_kawai",
-			vertex_type=Circle,
+			vertex_type=Dot,
 			vertex_config=vertex_config
 		)
-
-		label = MathTex("A DFA")
-		label.next_to(g, 2*DOWN)
 
 		loop_arcs = VGroup()
 		for loop in loops:
@@ -74,25 +70,27 @@ class DFAScene(Scene):
 			relative_pos = g.get_center() - node_pos
 
 			between = angle_between(RIGHT, relative_pos)
+			mult = 1
 
-			if between >= 0 and between < PI/2:
+			if between > 7*PI/4 or between < PI/4:
 				offset = UP
-			elif between >= PI/2 and between < PI:
-				offset = LEFT
-			elif between >= PI and between < 3*PI/2:
+			elif between >= PI/4 and between < 3*PI/4:
+				offset = RIGHT
+			elif between >= 3*PI/4 and between < 5*PI/4:
 				offset = DOWN
 			else:
-				offset = RIGHT
+				offset = LEFT
 
 			self_loop = CurvedArrow(
-				start_point=relative_pos,
-				end_point=relative_pos+offset,
+				start_point=[0,0,0],
+				end_point=offset,
 				fill_color=WHITE,
-				angle=4*PI/3,
-				stroke_width=5,
-			).scale(0.5)
+				angle=5*PI/3*mult,
+				stroke_width=5
+			).scale(0.4).rotate(PI)
 
-			#self_loop.next_to(g[loop[0]], unit_vector(relative_pos)*1.2)
+			self_loop.move_to(node_pos)
+			self_loop.shift(unit_vector(node_pos)*0.4)
 			loop_arcs.add(self_loop)
 
 		self.play(Create(g))
