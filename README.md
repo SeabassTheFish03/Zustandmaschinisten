@@ -20,6 +20,9 @@ This project is set up using a Conda environment, and the order of dependency in
 The order is important because pip and Conda don't play well together. To use them together, Conda must be used first and pip must be used second.
 
 
+## To run the code:
+Run using python, run the main file, the json file with the formal definition of the DFA, and the input string to run through the DFA.
+'py main.py <"file.json"> <"inputString">'
 
 
 
