@@ -45,6 +45,7 @@ class DFAScene(Scene):
             if (u, v) not in edge_config:
                 edge_config[(u, v)] = dict()
             transition_name = list(self.rawJson["transitions"][u].keys())[list(self.rawJson["transitions"][u].values()).index(v)]
+            print(transition_name)
             edge_config[(u, v)]["label"] = transition_name
 
         # TODO: Figure out how to use CurvedArrow
@@ -98,6 +99,10 @@ class DFAScene(Scene):
             self_loop.shift(unit_vector(node.get_center())*0.4)
             self.loop_arcs[loop[0]] = self_loop
 
+        #TODO: Fix labels
+        #TODO: Add start arrow
+        #TODO: Add double circle final state
+        #TODO: Curve arrows if possible
         self.loop_group = VGroup()
         self.loop_group.add(*self.loop_arcs.values())
         self.g.add(self.loop_group)
