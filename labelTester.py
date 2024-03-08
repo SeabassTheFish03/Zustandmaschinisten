@@ -22,7 +22,8 @@ class EdgeTester(Scene):
             }
         )
 
-        self.add(graph)
+        self.play(Create(graph))
+        self.wait()
 
 if __name__ == "__main__":
     with tempconfig({"quality": "low_quality", "preview": True}):

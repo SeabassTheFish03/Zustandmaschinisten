@@ -40,13 +40,12 @@ class DFAScene(Scene):
                 fill_color = "white"
             vertex_config[vertex] = {"fill_color": fill_color}
         
-        edge_config = dict()
+        edge_conf = dict()
         for (u, v) in self.edges:
-            if (u, v) not in edge_config:
-                edge_config[(u, v)] = dict()
+            if (u, v) not in edge_conf:
+                edge_conf[(u, v)] = dict()
             transition_name = list(self.rawJson["transitions"][u].keys())[list(self.rawJson["transitions"][u].values()).index(v)]
-            print(transition_name)
-            edge_config[(u, v)]["label"] = transition_name
+            edge_conf[(u, v)]["label"] = transition_name
 
         # TODO: Figure out how to use CurvedArrow
         self.g = LabeledEdgeDiGraph(
@@ -56,9 +55,9 @@ class DFAScene(Scene):
             label_fill_color=BLACK,
             layout="kamada_kawai",
             vertex_type=Dot,
-            vertex_config=vertex_config,
-            edge_config=edge_config,
+            #vertex_config=vertex_config,
             edge_type=LabeledLine,
+            edge_config=edge_conf,
         )
 
         self.loop_arcs = dict()
@@ -105,7 +104,6 @@ class DFAScene(Scene):
         #TODO: Curve arrows if possible
         self.loop_group = VGroup()
         self.loop_group.add(*self.loop_arcs.values())
-        self.g.add(self.loop_group)
 
     def sift_self_transitions(self):
         self_transitions = []
@@ -122,7 +120,7 @@ class DFAScene(Scene):
 
     def construct(self):
         # TODO: Figure out how to make it with labels (will need a subclass)
-        self.play(Create(self.g))
+        self.play(Create(self.g), Create(self.loop_group))
         self.wait()
 
 class WatchItHappen(DFAScene):
