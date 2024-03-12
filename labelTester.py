@@ -4,7 +4,7 @@ from labeledEdgeDiGraph import LabeledEdgeDiGraph
 class EdgeTester(Scene):
     def construct(self):
         vertices = ["q0", "q1"]
-        edges = [("q0", "q1")]
+        edges = [("q0", "q1"), ("q1", "q0")]
 
         graph = LabeledEdgeDiGraph(
             vertices,
@@ -18,6 +18,10 @@ class EdgeTester(Scene):
                 ("q0", "q1"): {
                     "label": "a",
                     "color": "red",
+                },
+                ("q1", "q0"): {
+                    "label": "b",
+                    "color": "green",
                 }
             }
         )

@@ -65,7 +65,7 @@ class DFAScene(Scene):
         for loop in self.loops:
             node = self.g[loop[0]]
 
-            relative_pos = self.g.get_center() - node.get_center()
+            relative_pos = node.get_center() - self.g.get_center()
 
             between = angle_between(RIGHT, relative_pos)
             mult = 1
@@ -87,21 +87,19 @@ class DFAScene(Scene):
                 end = node.get_bottom()
 
             self_loop = CurvedArrow(
-                start_point=start,
-                end_point=end,
+                start_point=node.get_top(),
+                end_point=node.get_bottom(),
                 fill_color=WHITE,
                 angle=-4*PI/3*mult,
                 stroke_width=5
-            ).scale(0.7)
+            ).rotate(between)
 
             self_loop.move_to(node.get_center())
             self_loop.shift(unit_vector(node.get_center())*0.4)
             self.loop_arcs[loop[0]] = self_loop
 
-        #TODO: Fix labels
         #TODO: Add start arrow
         #TODO: Add double circle final state
-        #TODO: Curve arrows if possible
         self.loop_group = VGroup()
         self.loop_group.add(*self.loop_arcs.values())
 
