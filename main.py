@@ -1,6 +1,7 @@
 from manim import *
 from labeledEdgeDiGraph import LabeledEdgeDiGraph
 from automata.fa.dfa import DFA
+from automata.fa.nfa import NFA
 import sys
 import json
 import numpy as np
@@ -92,7 +93,7 @@ class DFAScene(Scene):
                 fill_color=WHITE,
                 angle=-4*PI/3*mult,
                 stroke_width=5
-            ).rotate(between)
+            ).rotate(between + PI/4)
 
             self_loop.move_to(node.get_center())
             self_loop.shift(unit_vector(node.get_center())*0.4)
@@ -317,17 +318,78 @@ class AnimateDFAWithTable(WatchItHappen):
         self.wait()
 
 
+class NFA_DFA_Conversion(Scene):
+    def __init__(self, rawJson):
+        super().__init__()
+        self.rawJson = rawJson
+        self.nfa = JSONToNFA(rawJson)
+
+    def construct(self):
+        # Render initial NFA
+        initial_edges, initial_edge_config = JSONtoManimEdges(self.rawJson)
+        initial = LabeledEdgeDiGraph(
+            vertices = self.nfa.states,
+            edges = initial_edges,
+            labels = True,
+            layout = "kamada_kawai",
+            edge_type = LabeledLine,
+            edge_config = initial_edge_config,
+        )
+        self.play(Create(initial))
+        self.wait()
+        self.clear()
+
+        self.nfa = self.nfa.eliminate_lambda()
+        no_ep_edges, no_ep_edge_config = FAtoManimEdges(self.nfa)
+        no_ep = LabeledEdgeDiGraph(
+            vertices = self.nfa.states,
+            edges = no_ep_edges,
+            labels = True,
+            layout = "kamada_kawai",
+            edge_type = LabeledLine,
+            edge_config = no_ep_edge_config,
+        )
+        self.play(Create(no_ep))
+        self.wait()
+
 # This function just makes the edge list for displaying the dfa. It loses the input character
 def JSONtoManimEdges(rawJson): 
     edges = []
+    edge_config = dict()
     for start in rawJson["transitions"]:
         for symbol in rawJson["transitions"][start]:
-            newEdge = tuple((start, rawJson["transitions"][start][symbol]))
-            edges.append(newEdge)
-    return edges
+            for end in rawJson["transitions"][start][symbol]:
+                newEdge = tuple((start, end))
+                edges.append(newEdge)
+                
+                if (start, end) not in edge_config:
+                    edge_config[(start, end)] = dict()
+                edge_config[(start, end)]["label"] = symbol
+    return edges, edge_config
+
+def FAtoManimEdges(nfa):
+    edges = []
+    edge_config = dict()
+    for start in nfa.transitions:
+        for symbol in nfa.transitions[start]:
+            for end in nfa.transitions[start][symbol]:
+                edges.append((start, end))
+
+                if (start, end) not in edge_config:
+                    edge_config[(start, end)] = dict()
+                edge_config[(start, end)]["label"] = symbol
+    return edges, edge_config
 
 def JSONToDFA(rawJson):
     return DFA(
+        states = set(rawJson["states"]),
+        input_symbols = rawJson["input_symbols"],
+        transitions = rawJson["transitions"],
+        initial_state = rawJson["initial_state"],
+        final_states = set(rawJson["final_states"])
+    )
+def JSONToNFA(rawJson):
+    return NFA(
         states = set(rawJson["states"]),
         input_symbols = rawJson["input_symbols"],
         transitions = rawJson["transitions"],
@@ -355,7 +417,7 @@ def main():
     #   Try to decipher what could go wrong with the DFA lib and translate to readable errors
 
     with tempconfig({"quality": picture_quality, "preview": True}):
-        scene = DFAScene(rawJson)
+        scene = NFA_DFA_Conversion(rawJson)
         scene.render()
 
 if __name__ == "__main__":
