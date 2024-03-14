@@ -27,19 +27,16 @@ class DFAScene(Scene):
         self.loops, self.edges = self.sift_self_transitions()
 
         vertex_config = {
-            "fill_opacity": 1
+            "fill_opacity": 1,
+            "fill_color": "white",
         }
+
         for vertex in self.vertices:
-            if self.rawJson["initial_state"] == vertex:
-                if vertex in self.rawJson["final_states"]:
-                    fill_color = "yellow"
-                else:
-                    fill_color = "green"
-            elif vertex in self.rawJson["final_states"]:
-                fill_color = "red"
-            else:
-                fill_color = "white"
-            vertex_config[vertex] = {"fill_color": fill_color}
+            vertex_config[vertex] = {"flags": []}
+            if vertex in self.rawJson["final_states"]:
+                vertex_config[vertex]["flags"].append("f")
+            if vertex == self.rawJson["initial_state"]:
+                vertex_config[vertex]["flags"].append("i")
         
         edge_conf = dict()
         for (u, v) in self.edges:
