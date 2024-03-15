@@ -24,7 +24,8 @@ class DFAScene(Scene):
         self.rawJson = rawJson
 
         self.vertices = self.rawJson["states"]
-        self.loops, self.edges = self.sift_self_transitions()
+        self.edges = JSONtoManimEdges(self.rawJson)
+        # self.loops, self.edges = self.sift_self_transitions()
 
         vertex_config = {
             "fill_opacity": 1,
@@ -58,48 +59,48 @@ class DFAScene(Scene):
             edge_config=edge_conf,
         )
 
-        self.loop_arcs = dict()
-        loop_arcs = VGroup()
-        for loop in self.loops:
-            node = self.g[loop[0]]
-
-            relative_pos = node.get_center() - self.g.get_center()
-
-            between = angle_between(RIGHT, relative_pos)
-            mult = 1
-
-            if between < PI/4:
-                offset = UP
-                start = node.get_bottom()
-                end = node.get_top()
-            elif between >= PI/4 and between < 3*PI/4:
-                if relative_pos[1] > 0:
-                    start = node.get_left()
-                    end = node.get_right()
-                else:
-                    start = node.get_right()
-                    end = node.get_left()
-                mult = -1
-            elif between >= 3*PI/4:
-                start = node.get_top()
-                end = node.get_bottom()
-
-            self_loop = CurvedArrow(
-                start_point=node.get_top(),
-                end_point=node.get_bottom(),
-                fill_color=WHITE,
-                angle=-4*PI/3*mult,
-                stroke_width=5
-            ).rotate(between + PI/4)
-
-            self_loop.move_to(node.get_center())
-            self_loop.shift(unit_vector(node.get_center())*0.4)
-            self.loop_arcs[loop[0]] = self_loop
-
-        #TODO: Add start arrow
-        #TODO: Add double circle final state
-        self.loop_group = VGroup()
-        self.loop_group.add(*self.loop_arcs.values())
+        # self.loop_arcs = dict()
+        # loop_arcs = VGroup()
+        # for loop in self.loops:
+        #     node = self.g[loop[0]]
+        #
+        #     relative_pos = node.get_center() - self.g.get_center()
+        #
+        #     between = angle_between(RIGHT, relative_pos)
+        #     mult = 1
+        #
+        #     if between < PI/4:
+        #         offset = UP
+        #         start = node.get_bottom()
+        #         end = node.get_top()
+        #     elif between >= PI/4 and between < 3*PI/4:
+        #         if relative_pos[1] > 0:
+        #             start = node.get_left()
+        #             end = node.get_right()
+        #         else:
+        #             start = node.get_right()
+        #             end = node.get_left()
+        #         mult = -1
+        #     elif between >= 3*PI/4:
+        #         start = node.get_top()
+        #         end = node.get_bottom()
+        #
+        #     self_loop = CurvedArrow(
+        #         start_point=node.get_top(),
+        #         end_point=node.get_bottom(),
+        #         fill_color=WHITE,
+        #         angle=-4*PI/3*mult,
+        #         stroke_width=5
+        #     ).rotate(between + PI/4)
+        #
+        #     self_loop.move_to(node.get_center())
+        #     self_loop.shift(unit_vector(node.get_center())*0.4)
+        #     self.loop_arcs[loop[0]] = self_loop
+        #
+        # #TODO: Add start arrow
+        # #TODO: Add double circle final state
+        # self.loop_group = VGroup()
+        # self.loop_group.add(*self.loop_arcs.values())
 
     def sift_self_transitions(self):
         self_transitions = []
