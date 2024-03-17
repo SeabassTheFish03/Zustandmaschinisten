@@ -171,7 +171,7 @@ class LabeledEdgeDiGraph(DiGraph):
 
                 # Housekeeping
                 edge_type = type(edge)
-                tip = edge.pop_tips()[0]
+                # tip = edge.pop_tips()[0]
                 edge_label = tmp_edge_conf[(u, v)].pop("label", "update_edges fail") 
                 if edge_label == "":
                     edge_label = "\\epsilon" # Little hack because I know this is going to become a TeX string
@@ -184,7 +184,7 @@ class LabeledEdgeDiGraph(DiGraph):
                 ).shift(offset)
                 
                 edge.become(new_edge)
-                edge.add_tip(tip)
+                # edge.add_tip(tip)
             else:
                 edge_label = tmp_edge_conf[(u, u)].pop("label", "update_edges fail")
 
@@ -216,13 +216,13 @@ class LabeledEdgeDiGraph(DiGraph):
                     color="black",
                     fill_opacity=1,
                     stroke_width=0.5,
-                )
+                ).rotate(-1*between)
                 label_frame = SurroundingRectangle(
                     label_mobject,
                     buff = 0.05,
                     color="white",
                     stroke_width=0.5
-                )
+                ).rotate(-1*between)
                 edge.become(VGroup(loop, label_frame, label_background, label_mobject).rotate(between, about_point=self[u].get_center()))
 
     def __repr__(self):

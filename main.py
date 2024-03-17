@@ -1,21 +1,12 @@
 from manim import *
 from labeledEdgeDiGraph import LabeledEdgeDiGraph
+from utils import *
 from automata.fa.dfa import DFA
 from automata.fa.nfa import NFA
 import sys
 import json
 import numpy as np
 import queue
-
-# Unit Vector and Angle Between from:
-# https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python
-def unit_vector(vector):
-    return vector / np.linalg.norm(vector)
-
-def angle_between(v1, v2):
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 class DFAScene(Scene):
     def __init__(self, rawJson):
@@ -59,48 +50,8 @@ class DFAScene(Scene):
             edge_config=edge_conf,
         )
 
-        # self.loop_arcs = dict()
-        # loop_arcs = VGroup()
-        # for loop in self.loops:
-        #     node = self.g[loop[0]]
-        #
-        #     relative_pos = node.get_center() - self.g.get_center()
-        #
-        #     between = angle_between(RIGHT, relative_pos)
-        #     mult = 1
-        #
-        #     if between < PI/4:
-        #         offset = UP
-        #         start = node.get_bottom()
-        #         end = node.get_top()
-        #     elif between >= PI/4 and between < 3*PI/4:
-        #         if relative_pos[1] > 0:
-        #             start = node.get_left()
-        #             end = node.get_right()
-        #         else:
-        #             start = node.get_right()
-        #             end = node.get_left()
-        #         mult = -1
-        #     elif between >= 3*PI/4:
-        #         start = node.get_top()
-        #         end = node.get_bottom()
-        #
-        #     self_loop = CurvedArrow(
-        #         start_point=node.get_top(),
-        #         end_point=node.get_bottom(),
-        #         fill_color=WHITE,
-        #         angle=-4*PI/3*mult,
-        #         stroke_width=5
-        #     ).rotate(between + PI/4)
-        #
-        #     self_loop.move_to(node.get_center())
-        #     self_loop.shift(unit_vector(node.get_center())*0.4)
-        #     self.loop_arcs[loop[0]] = self_loop
-        #
-        # #TODO: Add start arrow
-        # #TODO: Add double circle final state
-        # self.loop_group = VGroup()
-        # self.loop_group.add(*self.loop_arcs.values())
+        #TODO: Add start arrow
+        #TODO: Add double circle final state
 
     def sift_self_transitions(self):
         self_transitions = []
@@ -349,51 +300,6 @@ class NFA_DFA_Conversion(Scene):
         )
         self.play(Create(no_ep))
         self.wait()
-
-# This function just makes the edge list for displaying the dfa. It loses the input character
-def JSONtoManimEdges(rawJson): 
-    edges = []
-    edge_config = dict()
-    for start in rawJson["transitions"]:
-        for symbol in rawJson["transitions"][start]:
-            for end in rawJson["transitions"][start][symbol]:
-                newEdge = tuple((start, end))
-                edges.append(newEdge)
-                
-                if (start, end) not in edge_config:
-                    edge_config[(start, end)] = dict()
-                edge_config[(start, end)]["label"] = symbol
-    return edges, edge_config
-
-def FAtoManimEdges(nfa):
-    edges = []
-    edge_config = dict()
-    for start in nfa.transitions:
-        for symbol in nfa.transitions[start]:
-            for end in nfa.transitions[start][symbol]:
-                edges.append((start, end))
-
-                if (start, end) not in edge_config:
-                    edge_config[(start, end)] = dict()
-                edge_config[(start, end)]["label"] = symbol
-    return edges, edge_config
-
-def JSONToDFA(rawJson):
-    return DFA(
-        states = set(rawJson["states"]),
-        input_symbols = rawJson["input_symbols"],
-        transitions = rawJson["transitions"],
-        initial_state = rawJson["initial_state"],
-        final_states = set(rawJson["final_states"])
-    )
-def JSONToNFA(rawJson):
-    return NFA(
-        states = set(rawJson["states"]),
-        input_symbols = rawJson["input_symbols"],
-        transitions = rawJson["transitions"],
-        initial_state = rawJson["initial_state"],
-        final_states = set(rawJson["final_states"])
-    )
 
 def main():
     if len(sys.argv) == 3 or len(sys.argv) == 4:
