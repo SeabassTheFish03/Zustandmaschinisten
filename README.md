@@ -1,4 +1,4 @@
-# Zustandmaschinisten
+# Finite State Machine with Input and Process Render (FSMIPR)
 Creating a visualizer for finite state machines in Python using automata-lib and manim
 
 Project Description: The visualizations of machines in the course notes are static. Therefore, any operations that we perform on them must be done sequentially, i.e., one operation at a time with a new figure each time. This project concerns creating a software library that will automatically generate videos for certain models and operations we encounter in CS474. You will be using the Python package Manim (https://www.manim.community/). This is a software package that, given Python code with specified animation function calls, will automatically generate a video. It supports many different shapes, graphs (in the math sense=vertices + edges), LaTeX, functions, and much more. This is the ideal tool to use for math visualization. 
