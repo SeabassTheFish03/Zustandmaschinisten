@@ -2,6 +2,7 @@ import numpy as np
 from automata.fa.dfa import DFA
 from automata.fa.nfa import NFA
 
+
 import json
 # Unit Vector and Angle Between from:
 # https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python
@@ -29,7 +30,7 @@ def JSONtoManimEdges(rawJson):
                 edge_config[(start, end)]["label"] = symbol
     return edges, edge_config
 
-def FAtoManimEdges(nfa):
+def NFAtoManimEdges(nfa):
     edges = []
     edge_config = dict()
     transitions = merge_duplicate_edges({"transitions": nfa.transitions})
@@ -43,13 +44,27 @@ def FAtoManimEdges(nfa):
                 edge_config[(start, end)]["label"] = symbol
     return edges, edge_config
 
+def DFAtoManimEdges(dfa):
+    edges = []
+    edge_config = dict()
+    for start in dfa.transitions:
+        for symbol in dfa.transitions[start]:
+            end = dfa.transitions[start][symbol]
+            edges.append((start, end))
+
+            if (start, end) not in edge_config:
+                edge_config[(start, end)] = dict()
+            edge_config[(start, end)]["label"] = symbol
+    return edges, edge_config
+
 def JSONToDFA(rawJson):
     return DFA(
         states = set(rawJson["states"]),
         input_symbols = rawJson["input_symbols"],
         transitions = rawJson["transitions"],
         initial_state = rawJson["initial_state"],
-        final_states = set(rawJson["final_states"])
+        final_states = set(rawJson["final_states"]),
+        allow_partial=True,
     )
 def JSONToNFA(rawJson):
     return NFA(
@@ -58,6 +73,29 @@ def JSONToNFA(rawJson):
         transitions = rawJson["transitions"],
         initial_state = rawJson["initial_state"],
         final_states = set(rawJson["final_states"])
+    )
+def FAToMobj(fa):
+    from labeledEdgeDiGraph import LabeledEdgeDiGraph
+
+    vertex_config = {v: {"flags": []} for v in fa.states}
+
+    vertex_config[fa.initial_state]["flags"].append("i")
+
+    for v in fa.final_states:
+        vertex_config[v]["flags"].append("f")
+
+    if isinstance(fa, NFA):
+        edges, edge_config = NFAtoManimEdges(fa)
+    elif isinstance(fa, DFA):
+        edges, edge_config = DFAtoManimEdges(fa)
+
+    return LabeledEdgeDiGraph(
+        vertices = fa.states,
+        edges = edges,
+        labels = True,
+        layout = "spectral",
+        vertex_config = vertex_config,
+        edge_config = edge_config,
     )
 
 def merge_duplicate_edges(rawJson):

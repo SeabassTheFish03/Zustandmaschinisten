@@ -12,20 +12,13 @@ class NFA_DFA_Conversion(Scene):
 
         self.nfa = JSONToNFA(rawJson)
 
-        initial_edges, initial_edge_config = JSONtoManimEdges(rawJson)
-        self.mobj = LabeledEdgeDiGraph(
-            vertices = self.nfa.states,
-            edges = initial_edges,
-            labels = True,
-            layout = "kamada_kawai",
-            edge_config = initial_edge_config 
-        ).shift(3*RIGHT)
+        self.mobj = FAToMobj(self.nfa).shift(3*RIGHT)
 
         self.checklist = BulletedList(
             "Create NFA",
-            "Remove epsilon transitions",
+            "Remove $\\epsilon$ transitions",
             "Remove nondeterminism",
-            "Display final DFA",
+            "Minify",
             font_size = 44,
         ).shift(3*LEFT)
 
@@ -34,22 +27,66 @@ class NFA_DFA_Conversion(Scene):
 
     def anim_remove_ep(self):
         self.nfa = self.nfa.eliminate_lambda()
-        new_edges, new_config = FAtoManimEdges(self.nfa)
-        new_mobj = LabeledEdgeDiGraph(
-            vertices = self.nfa.states,
-            edges = new_edges,
-            labels = True,
-            layout = "kamada_kawai",
-            edge_config = new_config 
-        ).shift(3*RIGHT)
+        new_mobj = FAToMobj(self.nfa).shift(3*RIGHT)
 
-        return [Indicate(self.checklist[1]), FadeTransform(self.mobj, new_mobj)]
+        anims = [Indicate(self.checklist[1]), FadeTransform(self.mobj, new_mobj)]
+        self.mobj = new_mobj
+        
+        return anims
+
+    def anim_remove_ambig(self):
+        self.nfa = DFA.from_nfa(self.nfa, minify=False)
+        new_transitions = {
+            "q" + str(start): {
+                symbol: "q" + str(self.nfa.transitions[start][symbol]) for symbol in self.nfa.transitions[start]
+            } for start in self.nfa.transitions
+        }
+        self.nfa = DFA(
+            states = set(["q" + str(state) for state in self.nfa.states]),
+            input_symbols=set(self.nfa.input_symbols),
+            transitions=new_transitions,
+            initial_state="q" + str(self.nfa.initial_state),
+            final_states = set(["q" + str(state) for state in self.nfa.final_states]),
+            allow_partial=True
+        )
+        new_mobj = FAToMobj(self.nfa).shift(3*RIGHT)
+
+        anims = [Indicate(self.checklist[2]), FadeTransform(self.mobj, new_mobj)]
+        self.mobj = new_mobj
+
+        return anims
+
+    def anim_minify(self):
+        self.nfa = self.nfa.minify()
+        new_transitions = {
+            "q" + str(start): {
+                symbol: "q" + str(self.nfa.transitions[start][symbol]) for symbol in self.nfa.transitions[start]
+            } for start in self.nfa.transitions
+        }
+        self.nfa = DFA(
+            states = set(["q" + str(state) for state in self.nfa.states]),
+            input_symbols=set(self.nfa.input_symbols),
+            transitions=new_transitions,
+            initial_state="q" + str(self.nfa.initial_state),
+            final_states = set(["q" + str(state) for state in self.nfa.final_states]),
+            allow_partial=True
+        )
+        new_mobj = FAToMobj(self.nfa).shift(3*RIGHT)
+
+        anims = [Indicate(self.checklist[3]), FadeTransform(self.mobj, new_mobj)]
+        self.mobj = new_mobj
+
+        return anims
 
     def construct(self):
         self.play(*self.anim_init())
         self.play(Indicate(self.checklist[0]))
         self.wait(2)
         self.play(*self.anim_remove_ep())
+        self.wait(2)
+        self.play(*self.anim_remove_ambig())
+        self.wait(2)
+        self.play(*self.anim_minify())
         self.wait(2)
 
 def main(args):
@@ -60,7 +97,7 @@ def main(args):
         else:
             picture_quality = "low_quality"
     else:
-        print("Usage: python main.py <NFA.json> [picture_quality (default low)]")
+        print("Usage: python nfa_dfa.py <NFA.json> [picture_quality (default low)]")
         exit(code=2)
 
     with open(nfaFilename, "r") as f:

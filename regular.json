@@ -1,0 +1,11 @@
+{
+    "states": ["q0", "q1", "q2"],
+    "input_symbols": ["x", "y", "z"],
+    "transitions": {
+        "q0": {"x": "q1"},
+        "q1": {"y": "q1", "z": "q2"},
+        "q2": {}
+    },
+    "initial_state": "q0",
+    "final_states": ["q2"]
+}
