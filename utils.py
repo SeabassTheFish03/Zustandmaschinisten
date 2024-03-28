@@ -2,7 +2,6 @@ import numpy as np
 from automata.fa.dfa import DFA
 from automata.fa.nfa import NFA
 
-
 import json
 # Unit Vector and Angle Between from:
 # https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python
@@ -93,7 +92,7 @@ def FAToMobj(fa):
         vertices = fa.states,
         edges = edges,
         labels = True,
-        layout = "spectral",
+        layout = "kamada_kawai",
         vertex_config = vertex_config,
         edge_config = edge_config,
     )
