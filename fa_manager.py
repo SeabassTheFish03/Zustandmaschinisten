@@ -7,8 +7,13 @@ from abc import ABC, abstractmethod
 from automata.fa.dfa import DFA
 
 from labeledEdgeDiGraph import LabeledEdgeDiGraph
+from exceptions import EmptyInputException, InvalidInputException
 
 class Automaton_Manager(ABC):
+    @abstractmethod
+    def __init__(self, auto, mobj):
+        pass
+
     @abstractmethod
     def from_json(self, rawStr):
         pass
@@ -18,30 +23,42 @@ class Automaton_Manager(ABC):
         pass
 
     @abstractmethod
-    def next_state(self, symbol):
+    def peek(self, symbol=None):
+        pass
+
+    @abstractmethod
+    def next(self):
         pass
 
 class DFA_Manager(Automaton_Manager):
-    def __init__(self, auto, mobj):
+    def __init__(self, auto, mobj, input_string = ""):
+        # Attributes common to all Automaton_Managers
         self.auto = auto
         self.mobj = mobj
 
+        self.current_state = self.auto.initial_state
+        self.input_string = input_string
+
+        # A little aliasing
         self.dfa = self.auto
 
+    ## Utility methods, for instantiating a class with just one component ##
     @classmethod
-    def from_json(cls, rawStr):
+    def from_json(cls, rawStr, input_string=None):
         if isinstance(rawStr, str):
             try:
                 rawJson = json.loads(rawStr)
             except json.decoder.JSONDecodeError as e:
                 print(f"Malformed JSON: {e}", file=sys.stderr)
                 raise SystemExit(1)
-
         elif isinstance(rawStr, dict):
             rawJson = rawStr
         else:
             print(f"Given input of type {type(rawStr)}, expected str or dict")
             raise SystemExit(1)
+
+        if input_string is None:
+            input_string = rawJson.get("input_string", "")
 
         auto_type = rawJson["type"]
         if auto_type != "dfa":
@@ -75,10 +92,10 @@ class DFA_Manager(Automaton_Manager):
                 edge_config   = edge_config
             )
 
-            return cls(auto, mobj)
+            return cls(auto, mobj, input_string)
 
     @classmethod
-    def from_mobj(cls, mobj):
+    def from_mobj(cls, mobj, input_string=""):
         input_symbols = set()
         initial_state = None
         final_states = set()
@@ -102,13 +119,14 @@ class DFA_Manager(Automaton_Manager):
             allow_partial = True,
         )
 
-        return cls(auto, mobj)
+        return cls(auto, mobj, input_string)
 
     @classmethod
-    def from_dfa(cls, dfa):
+    def from_dfa(cls, dfa, input_string=""):
         vertex_config = {v: {"flags": []} for v in dfa.states}
 
         vertex_config[dfa.initial_state]["flags"].append("i")
+        vertex_config[dfa.initial_state]["flags"].append("c")
 
         for v in dfa.final_states:
             vertex_config[v]["flags"].append("f")
@@ -124,8 +142,9 @@ class DFA_Manager(Automaton_Manager):
             edge_config = edge_config,
         )
 
-        return cls(dfa, mobj)
+        return cls(dfa, mobj, input_string)
 
+    ## Some private, static methods for ease of use ##
     @staticmethod
     def _mobj_edges_to_auto_transitions(edges, edge_config):
         transitions = dict()
@@ -170,5 +189,35 @@ class DFA_Manager(Automaton_Manager):
                 edge_config[(start, end)]["label"] = symbol
         return edges, edge_config
 
-    def next_state(self):
-        pass
+    ## Public methods for interaction ##
+
+    # Returns the next state without moving to it. Including a symbol overrides
+    #   the first character of the input string. This is not an option for next()
+    def peek(self, symbol=None):
+        if symbol is None:
+            if len(self.input_string) > 0:
+                symbol = self.input_string[0]
+            else:
+                return None
+            
+        nxt = self.dfa._get_next_current_state(self.current_state, symbol)
+
+        if nxt is None:
+            raise InvalidInputException("That input does not have a defined transition at this state")
+        else:
+            return nxt
+
+    # Returns the next state, while updating the internal state to match. There
+    #   is no option to override with a different character
+    def next(self):
+        # This could raise an InvalidInputException, but I want that to propogate up
+        next_state = self.peek()
+
+        if next_state is None:
+            raise EmptyInputException("There are no characters left in the input string")
+
+        self.mobj.remove_flag(self.current_state, "c")
+        self.mobj.add_flag(next_state, "c")
+
+        self.current_state = next_state
+

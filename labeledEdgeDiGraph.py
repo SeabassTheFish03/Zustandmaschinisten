@@ -11,7 +11,7 @@ from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
 from manim.mobject.mobject import override_animate
 from manim.mobject.text.tex_mobject import MathTex
-from manim.mobject.types.vectorized_mobject import VGroup
+from manim.mobject.types.vectorized_mobject import VGroup, VDict
 
 from copy import copy, deepcopy
 
@@ -22,9 +22,9 @@ class LabeledEdgeDiGraph(DiGraph):
         self,
         vertices,
         edges,
-        labels = False,
+        labels = dict(),
         label_fill_color = "black",
-        layout = "spring",
+        layout = "kamada_kawai",
         layout_scale = 2,
         layout_config = None,
         vertex_type = Dot,
@@ -35,8 +35,20 @@ class LabeledEdgeDiGraph(DiGraph):
         root_vertex = None,
         edge_config = None,
     ):
-        if vertex_config is not None:
-            self.flags = {v: vertex_config[v].pop("flags") for v in vertex_config}
+
+        if vertex_mobjects is None:
+            vertex_mobjects = dict()
+        else:
+            self.common_vertex_config = dict()
+            if vertex_config is not None:
+                self.flags = {v: vertex_config[v].pop("flags") for v in vertex_config}
+
+                for key, value in vertex_config.items():
+                    if key not in vertices:
+                        self.common_vertex_config[key] = value
+
+
+
         super().__init__(
             vertices,
             edges,
@@ -53,34 +65,19 @@ class LabeledEdgeDiGraph(DiGraph):
             root_vertex,
             edge_config,
         )
+        self.layout_scale = layout_scale
+        
+        self.vertices = {v: VDict({"base": deepcopy(vertex), "accessories": VGroup()}) for (v, vertex) in enumerate(self.vertices)}
+        print(self.vertices)
 
-        for v in self.vertices:
-            if "f" in self.flags[v]:
-                self.add(
-                    Annulus(
-                        inner_radius = self.vertices[v].radius + 0.05,
-                        outer_radius = self.vertices[v].radius + 0.1,
-                        z_index = -1,
-                        fill_color="white"
-                    ).move_to(self.vertices[v].get_center())
-                )
-            if "i" in self.flags[v]:
-                ray = self.vertices[v].get_center() - self.get_vcenter()
-                self.add(
-                    Arrow(
-                        start=ray*2,
-                        end=ray*1.05,
-                        fill_color="white",
-                        stroke_width=20
-                    )
-                )
+        self._redraw_vertices()
 
     def get_vcenter(self):
-        return np.average(np.array([x.get_center() for x in self.vertices.values()]), axis=0)
+        return np.average(np.array([vertex["base"].get_center() for vertex in self.vertices.values()]), axis=0)
 
     def _populate_edge_dict(self, edges, edge_type):
         if edge_type.__name__ != "LabeledLine":
-            raise Exception("Unsupported edge type: " + edge_type.__name__ + ". Must use LabeledLine")
+            raise TypeError("Unsupported edge type: " + edge_type.__name__ + ". Must use LabeledLine")
 
         tmp_edge_conf = deepcopy(self._edge_config)
 
@@ -107,14 +104,6 @@ class LabeledEdgeDiGraph(DiGraph):
                 ).shift(offset)
             else:
                 edge_label = tmp_edge_conf[(u, u)].pop("label", "_populate_edge_dict fail")
-
-                def unit_vector(vector):
-                    return vector/np.linalg.norm(vector)
-
-                def angle_between(v1, v2):
-                    v1_u = unit_vector(v1)
-                    v2_u = unit_vector(v2)
-                    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
                 between = angle_between(self[u].get_center() - self.get_vcenter(), np.array([1, 0, 0]))
 
@@ -161,7 +150,7 @@ class LabeledEdgeDiGraph(DiGraph):
             if u != v:
                 # Handling arrows going both ways
                 if (v, u) in self.edges:
-                    vec1 = self[v].get_center() - self[u].get_center()
+                    vec1 = self.vertices[v]["base"].get_center() - self.vertices[u]["base"].get_center()
                     vec2 = np.cross(vec1, np.array([0, 0, 1]))
 
                     length = np.linalg.norm(vec2)
@@ -178,8 +167,8 @@ class LabeledEdgeDiGraph(DiGraph):
                 
                 new_edge = edge_type(
                     label = edge_label,
-                    start = self[u],
-                    end = self[v],
+                    start = self.vertices[u]["base"],
+                    end = self.vertices[v]["base"],
                     **tmp_edge_conf[(u, v)]
                 ).shift(offset)
                 
@@ -188,11 +177,11 @@ class LabeledEdgeDiGraph(DiGraph):
             else:
                 edge_label = tmp_edge_conf[(u, u)].pop("label", "update_edges fail")
 
-                between = angle_between(self[u].get_center() - self.get_vcenter(), np.array([1, 0, 0]))
-                
+                between = angle_between(self.vertices[u]["base"].get_center() - self.get_vcenter(), np.array([1, 0, 0]))
+
                 loop = CurvedArrow(
-                    start_point = self[u].get_top(),
-                    end_point = self[u].get_bottom(),
+                    start_point = self.vertices[u]["base"].get_top(),
+                    end_point = self.vertices[u]["base"].get_bottom(),
                     angle = -4,
                     z_index = -1,
                     **tmp_edge_conf[(u, u)]
@@ -216,7 +205,44 @@ class LabeledEdgeDiGraph(DiGraph):
                     color="white",
                     stroke_width=0.5
                 ).rotate(-1*between)
-                edge.become(VGroup(loop, label_frame, label_background, label_mobject).rotate(between, about_point=self[u].get_center()))
+                edge.become(VGroup(loop, label_frame, label_background, label_mobject).rotate(between, about_point=self.vertices[u]["base"].get_center()))
+
+    def _redraw_vertices(self):
+        for v in self.vertices:
+            if "f" in self.flags[v]:
+                ring = Annulus(
+                    inner_radius = self.vertices[v]["base"].width + 0.1,
+                    outer_radius = self.vertices[v]["base"].width + 0.2,
+                    z_index = -1,
+                    fill_color="white"
+                ).move_to(self.vertices[v]["base"].get_center()).scale(1/self.layout_scale)
+
+                self.vertices[v]["accessories"].add(ring)
+
+            if "i" in self.flags[v]:
+                ray = self.vertices[v].get_center() - self.get_vcenter()
+                start_arrow = Arrow(
+                    start=ray*2,
+                    end=ray*1.05,
+                    fill_color="white",
+                    stroke_width=20
+                )
+                self.vertices[v]["accessories"].add(start_arrow)
+
+            if "c" in self.flags[v]:
+                self.vertices[v]["base"].set_color("yellow")
+
+    def add_flag(self, state, flag):
+        if state in self.vertices:
+            self.flags[state].append(flag)
+        self._redraw_vertices()
+
+    def remove_flag(self, state, flag):
+        if state in self.vertices:
+            if flag in self.flags[state]:
+                self.flags[state].remove(flag)
+        self._redraw_vertices()
+
 
     def __repr__(self):
         return f"Directed Graph with labeled edges with {len(self.vertices)} vertices and {len(self.edges)} edges"

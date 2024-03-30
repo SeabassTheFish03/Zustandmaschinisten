@@ -15,5 +15,7 @@ def main():
     dfa_from_mobj = DFA_Manager.from_mobj(dfa_from_dfa.mobj)
     print(dfa_from_mobj.dfa.states)
 
+    dfa_from_mobj.mobj.add_flag(next(iter(dfa_from_mobj.dfa.states)), "c")
+
 if __name__ == "__main__":
     main()
