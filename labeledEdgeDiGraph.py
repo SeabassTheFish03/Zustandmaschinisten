@@ -5,7 +5,7 @@ __all__ = {
 import numpy as np
 
 from manim.mobject.graph import DiGraph
-from manim.mobject.geometry.arc import CurvedArrow, Dot, Annulus
+from manim.mobject.geometry.arc import CurvedArrow, Dot, Annulus, LabeledDot
 from manim.mobject.geometry.labeled import LabeledLine
 from manim.mobject.geometry.line import Arrow
 from manim.mobject.geometry.shape_matchers import BackgroundRectangle, SurroundingRectangle
@@ -22,7 +22,7 @@ class LabeledEdgeDiGraph(DiGraph):
         self,
         vertices,
         edges,
-        labels = dict(),
+        labels = False,
         label_fill_color = "black",
         layout = "kamada_kawai",
         layout_scale = 2,
@@ -36,18 +36,38 @@ class LabeledEdgeDiGraph(DiGraph):
         edge_config = None,
     ):
 
+        if isinstance(labels, dict):
+            self._labels = labels
+        elif isinstance(labels, bool):
+            if labels:
+                self._labels = {v: MathTex(v, fill_color=label_fill_color) for v in vertices}
+            else:
+                self._labels = dict()
+
+        if self._labels and vertex_type is Dot:
+            vertex_type = LabeledDot
+
+        self.common_vertex_config = dict()
         if vertex_mobjects is None:
             vertex_mobjects = dict()
         else:
-            self.common_vertex_config = dict()
-            if vertex_config is not None:
-                self.flags = {v: vertex_config[v].pop("flags") for v in vertex_config}
+            for key, value in vertex_config.items():
+                if key not in vertices:
+                    self.common_vertex_config[key] = value
 
-                for key, value in vertex_config.items():
-                    if key not in vertices:
-                        self.common_vertex_config[key] = value
+        if vertex_config is not None:
+            self.flags = {v: vertex_config[v].pop("flags") for v in vertex_config}
 
+        self._vertex_config = {
+            v: vertex_config.get(v, copy(self.common_vertex_config)) for v in vertices
+        }
+        
+        for v, label in self._labels.items():
+            self._vertex_config[v]["label"] = label
 
+        vertex_mobjects = {v: vertex_type(**self._vertex_config[v]) for v in vertices}
+
+        vertex_mobjects = {v: VDict({"base": deepcopy(vertex), "accessories": VGroup()}) for v, vertex in vertex_mobjects.items()}
 
         super().__init__(
             vertices,
@@ -67,9 +87,6 @@ class LabeledEdgeDiGraph(DiGraph):
         )
         self.layout_scale = layout_scale
         
-        self.vertices = {v: VDict({"base": deepcopy(vertex), "accessories": VGroup()}) for (v, vertex) in enumerate(self.vertices)}
-        print(self.vertices)
-
         self._redraw_vertices()
 
     def get_vcenter(self):
