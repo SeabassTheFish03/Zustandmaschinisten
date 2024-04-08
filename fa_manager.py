@@ -331,6 +331,38 @@ class NFA_Manager(Automaton_Manager):
 
         return cls(dfa, mobj, input_string)
 
+    @classmethod
+    def from_nfa(cls, nfa, input_string=""):
+        vertex_config = {v: {"flags": []} for v in nfa.states}
+
+        vertex_config[nfa.initial_state]["flags"].append("i")
+        vertex_config[nfa.initial_state]["flags"].append("c")
+
+        for v in nfa.final_states:
+            vertex_config[v]["flags"].append("f")
+
+        edges, edge_config = cls._auto_transitions_to_mobj_edges(nfa.transitions)
+
+        mobj = LabeledEdgeDiGraph(
+            vertices = nfa.states,
+            edges = edges,
+            labels = True,
+            layout = "kamada_kawai",
+            vertex_config = vertex_config,
+            edge_config = edge_config,
+        )
+
+        return cls(nfa, mobj, input_string)
+
+    @classmethod
+    def from_fa(cls, fa, input_string=""):
+        if isinstance(fa, DFA):
+            return cls.from_dfa(fa, input_string)
+        elif isinstance(fa, NFA):
+            return cls.from_nfa(fa, input_string)
+        else:
+            raise TypeError(f"Can't create nfa from type {type(fa)}.")
+
     ## Some private, static methods for ease of use ##
     @staticmethod
     def _mobj_edges_to_auto_transitions(edges, edge_config):
