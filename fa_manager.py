@@ -372,7 +372,10 @@ class NFA_Manager(Automaton_Manager):
                 transitions[start] = dict()
 
             symbol = edge_config[(start, end)]["label"]
-            transitions[start][symbol] = end
+            if symbol not in transitions[start]:
+                transitions[start][symbol] = list()
+
+            transitions[start][symbol].append(end)
         return transitions
 
     @staticmethod
@@ -382,13 +385,14 @@ class NFA_Manager(Automaton_Manager):
 
         for start in transitions:
             for symbol in transitions[start]:
-                end = transitions[start][symbol]
-                edges.append((start, end))
+                endings = transitions[start][symbol]
+                for end in endings:
+                    edges.append((start, end))
 
-                if (start, end) not in edge_config:
-                    edge_config[(start, end)] = dict()
+                    if (start, end) not in edge_config:
+                        edge_config[(start, end)] = dict()
 
-                edge_config[(start, end)]["label"] = symbol
+                    edge_config[(start, end)]["label"] = symbol
         return edges, edge_config
 
     @staticmethod
@@ -399,18 +403,19 @@ class NFA_Manager(Automaton_Manager):
         edge_config = dict()
         for start in new_transitions:
             for symbol in new_transitions[start]:
-                end = new_transitions[start][symbol]
+                endings = new_transitions[start][symbol]
 
-                edges.append((start, end))
+                for end in endings:
+                    edges.append((start, end))
 
-                if (start, end) not in edge_config:
-                    edge_config[(start, end)] = dict()
-                edge_config[(start, end)]["label"] = symbol
+                    if (start, end) not in edge_config:
+                        edge_config[(start, end)] = dict()
+                    edge_config[(start, end)]["label"] = symbol
         return edges, edge_config
 
     ## Public methods for interaction ##
 
-    # Returns the next state without moving to it. Including a symbol overrides
+    # Returns the possible next states without moving to them. Including a symbol overrides
     #   the first character of the input string. This is not an option for next()
     def peek(self, symbol=None):
         if symbol is None:
@@ -418,25 +423,47 @@ class NFA_Manager(Automaton_Manager):
                 symbol = self.input_string[0]
             else:
                 return None
-            
-        nxt = self.dfa._get_next_current_state(self.current_state, symbol)
-
-        if nxt is None:
-            raise InvalidInputException("That input does not have a defined transition at this state")
+        elif symbol.lower() in ["ep", "epsilon"]:
+            return self.nfa._get_lambda_closures().get(self.current_state)
         else:
-            return nxt
+            nxt = self.nfa._get_next_current_states(self.current_state, symbol).union(self.peek("epsilon"))
 
-    # Returns the next state, while updating the internal state to match. There
-    #   is no option to override with a different character
-    def next(self):
+            if nxt is None:
+                raise InvalidInputException("That input does not have a defined transition at this state")
+            else:
+                return nxt
+
+    # Unlike DFA, this behavior is nondeterministic. The caller must choose an ending state based on the peek() method. If the ending state is valid, next() will return that state and update the internal state to it
+    def next(self, end):
         # This could raise an InvalidInputException, but I want that to propogate up
-        next_state = self.peek()
+        if end in self.peek():
+            self.mobj.remove_flag(self.current_state, "c")
+            self.mobj.add_flag(end, "c")
 
-        if next_state is None:
-            raise EmptyInputException("There are no characters left in the input string")
+            self.current_state = end
+        else:
+            raise NondeterminismException("Next state requested for NFA, but state was unreachable")
 
-        self.mobj.remove_flag(self.current_state, "c")
-        self.mobj.add_flag(next_state, "c")
+class PDA_Manager(Automaton_Manager):
+    def __init__(self, auto, mobj):
+        # Attributes common to all Automaton_Managers
+        self.auto = auto
+        self.mobj = mobj
 
-        self.current_state = next_state
-    
+        self.current_state = self.auto.initial_state
+        self.input_string = input_string
+
+        # A little aliasing
+        self.dfa = self.auto
+
+    def from_json(self, rawStr):
+        pass
+
+    def from_mobj(self, mobj):
+        pass
+
+    def peek(self, symbol=None):
+        pass
+
+    def next(self):
+        pass
