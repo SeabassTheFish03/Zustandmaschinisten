@@ -5,14 +5,18 @@ import copy
 from abc import ABC, abstractmethod
 
 from automata.fa.dfa import DFA
+from automata.fa.nfa import NFA
 
 from labeledEdgeDiGraph import LabeledEdgeDiGraph
 from exceptions import EmptyInputException, InvalidInputException
+from manim.animation.transform import FadeTransform
 
 class Automaton_Manager(ABC):
     @abstractmethod
-    def __init__(self, auto, mobj):
-        pass
+    def __init__(self, auto, mobj, input_string=""):
+        self.auto = auto
+        self.mobj = mobj
+        self.input_string = input_string
 
     @abstractmethod
     def from_json(self, rawStr):
@@ -30,6 +34,7 @@ class Automaton_Manager(ABC):
     def next(self):
         pass
 
+
 class DFA_Manager(Automaton_Manager):
     def __init__(self, auto, mobj, input_string = ""):
         # Attributes common to all Automaton_Managers
@@ -41,6 +46,7 @@ class DFA_Manager(Automaton_Manager):
 
         # A little aliasing
         self.dfa = self.auto
+
 
     ## Utility methods, for instantiating a class with just one component ##
     @classmethod
@@ -78,6 +84,7 @@ class DFA_Manager(Automaton_Manager):
 
             vertex_config = {vertex: {"flags": []} for vertex in rawJson["states"]}
             vertex_config[rawJson["initial_state"]]["flags"].append("i")
+            vertex_config[rawJson["initial_state"]]["flags"].append("c")
             
             for vertex in rawJson["final_states"]:
                 vertex_config[vertex]["flags"].append("f")
@@ -174,7 +181,6 @@ class DFA_Manager(Automaton_Manager):
 
     @staticmethod
     def _json_to_mobj_edges(rawJson):
-        print(rawJson)
         new_transitions = copy.deepcopy(rawJson["transitions"])
         edges = list()
         edge_config = dict()
@@ -220,6 +226,17 @@ class DFA_Manager(Automaton_Manager):
         self.mobj.add_flag(next_state, "c")
 
         self.current_state = next_state
+        self.input_string = self.input_string[1:]
+
+    def animate(self, steps=None):
+        if steps is None:
+            steps = len(self.input_string)
+
+        for i in range(steps):
+            prev_mobj = self.mobj
+            self.next()
+
+            yield FadeTransform(prev_mobj, self.mobj)
 
 class NFA_Manager(Automaton_Manager):
     def __init__(self, auto, mobj, input_string = ""):
@@ -231,7 +248,7 @@ class NFA_Manager(Automaton_Manager):
         self.input_string = input_string
 
         # A little aliasing
-        self.dfa = self.auto
+        self.nfa = self.auto
 
     ## Utility methods, for instantiating a class with just one component ##
     @classmethod
@@ -329,7 +346,7 @@ class NFA_Manager(Automaton_Manager):
             edge_config = edge_config,
         )
 
-        return cls(dfa, mobj, input_string)
+        return cls(NFA.from_dfa(dfa), mobj, input_string)
 
     @classmethod
     def from_nfa(cls, nfa, input_string=""):
@@ -386,13 +403,21 @@ class NFA_Manager(Automaton_Manager):
         for start in transitions:
             for symbol in transitions[start]:
                 endings = transitions[start][symbol]
-                for end in endings:
-                    edges.append((start, end))
+                if isinstance(endings, str):
+                    edges.append((start, endings))
 
-                    if (start, end) not in edge_config:
-                        edge_config[(start, end)] = dict()
+                    if (start, endings) not in edge_config:
+                        edge_config[(start, endings)] = dict()
+                        
+                    edge_config[(start, endings)]["label"] = symbol
+                else:
+                    for end in endings:
+                        edges.append((start, end))
 
-                    edge_config[(start, end)]["label"] = symbol
+                        if (start, end) not in edge_config:
+                            edge_config[(start, end)] = dict()
+
+                        edge_config[(start, end)]["label"] = symbol
         return edges, edge_config
 
     @staticmethod
@@ -423,7 +448,8 @@ class NFA_Manager(Automaton_Manager):
                 symbol = self.input_string[0]
             else:
                 return None
-        elif symbol.lower() in ["ep", "epsilon"]:
+
+        if symbol.lower() in ["ep", "epsilon"]:
             return self.nfa._get_lambda_closures().get(self.current_state)
         else:
             nxt = self.nfa._get_next_current_states(self.current_state, symbol).union(self.peek("epsilon"))
@@ -431,7 +457,8 @@ class NFA_Manager(Automaton_Manager):
             if nxt is None:
                 raise InvalidInputException("That input does not have a defined transition at this state")
             else:
-                return nxt
+                print(list(nxt)[0])
+                return list(nxt)[0]
 
     # Unlike DFA, this behavior is nondeterministic. The caller must choose an ending state based on the peek() method. If the ending state is valid, next() will return that state and update the internal state to it
     def next(self, end):
@@ -441,6 +468,7 @@ class NFA_Manager(Automaton_Manager):
             self.mobj.add_flag(end, "c")
 
             self.current_state = end
+            self.input_string = self.input_string[1:]
         else:
             raise NondeterminismException("Next state requested for NFA, but state was unreachable")
 
@@ -454,7 +482,31 @@ class PDA_Manager(Automaton_Manager):
         self.input_string = input_string
 
         # A little aliasing
-        self.dfa = self.auto
+        self.pda = self.auto
+
+    def from_json(self, rawStr):
+        pass
+
+    def from_mobj(self, mobj):
+        pass
+
+    def peek(self, symbol=None):
+        pass
+
+    def next(self):
+        pass
+
+class TM_Manager(Automaton_Manager):
+    def __init__(self, auto, mobj):
+        # Attributes common to all Automaton_Managers
+        self.auto = auto
+        self.mobj = mobj
+
+        self.current_state = self.auto.initial_state
+        self.tape = input_string
+
+        # A little aliasing
+        self.tm = self.auto
 
     def from_json(self, rawStr):
         pass

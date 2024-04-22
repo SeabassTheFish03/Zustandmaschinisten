@@ -1,21 +1,30 @@
-from fa_manager import DFA_Manager
+from fa_manager import *
 
 import json
+from manim import *
 
-def main():
-    with open("fa_vault/simple.json", "r") as f:
-        rawJson = json.loads(f.read())
+from turingTape import TuringTape
 
-    dfa_from_json = DFA_Manager.from_json(rawJson)
-    print(dfa_from_json.dfa.states)
+class TestScene(Scene):
+    def construct(self):
+        with open("fa_vault/simple.json", "r") as f:
+            rawJson = json.loads(f.read())
 
-    dfa_from_dfa = DFA_Manager.from_dfa(dfa_from_json.dfa)
-    print(dfa_from_dfa.dfa.states)
+        dfa = DFA_Manager.from_json(rawJson, "bac")
+        nfa = NFA_Manager.from_dfa(dfa.auto, "bac")
 
-    dfa_from_mobj = DFA_Manager.from_mobj(dfa_from_dfa.mobj)
-    print(dfa_from_mobj.dfa.states)
+        self.add(nfa.mobj)
 
-    dfa_from_mobj.mobj.add_flag(next(iter(dfa_from_mobj.dfa.states)), "c")
+        # while (nxt := nfa.peek()) is not None:
+        #     self.play(nfa.mobj.transition_animation(nfa.current_state, nxt))
+        #     nfa.next(nxt)
+        #     self.wait(1)
+
+        turing = TuringTape("bac")
+        self.add(turing.get_mobject())
+            
 
 if __name__ == "__main__":
-    main()
+    with tempconfig({"quality": "low_quality", "preview": True}):
+        scene = TestScene()
+        scene.render()
