@@ -4,6 +4,8 @@ class TuringTape:
     def __init__(self, input_string):
         self.string = input_string
 
+        if self.string == "": self.string = "_"
+
     def get_mobject(self):
         out = VGroup()
 

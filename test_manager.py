@@ -10,18 +10,19 @@ class TestScene(Scene):
         with open("fa_vault/simple.json", "r") as f:
             rawJson = json.loads(f.read())
 
-        dfa = DFA_Manager.from_json(rawJson, "bac")
-        nfa = NFA_Manager.from_dfa(dfa.auto, "bac")
+        # dfa = DFA_Manager.from_json(rawJson, "bac")
+        # nfa = NFA_Manager.from_dfa(dfa.auto, "bac")
 
-        self.add(nfa.mobj)
+        # self.add(nfa.mobj)
 
         # while (nxt := nfa.peek()) is not None:
         #     self.play(nfa.mobj.transition_animation(nfa.current_state, nxt))
         #     nfa.next(nxt)
         #     self.wait(1)
 
-        turing = TuringTape("bac")
-        self.add(turing.get_mobject())
+        with open("turing.json", "r") as f:
+            turing = TM_Manager.from_json(f.read(), "000111")
+        self.add(turing.mobj)
             
 
 if __name__ == "__main__":

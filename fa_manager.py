@@ -6,17 +6,19 @@ from abc import ABC, abstractmethod
 
 from automata.fa.dfa import DFA
 from automata.fa.nfa import NFA
+from automata.pda.pda import PDA
+from automata.tm.dtm import DTM
 
 from labeledEdgeDiGraph import LabeledEdgeDiGraph
+from turingTape import TuringTape
 from exceptions import EmptyInputException, InvalidInputException
-from manim.animation.transform import FadeTransform
+
+from manim import UP, DOWN, LEFT, RIGHT, VGroup
 
 class Automaton_Manager(ABC):
     @abstractmethod
-    def __init__(self, auto, mobj, input_string=""):
-        self.auto = auto
-        self.mobj = mobj
-        self.input_string = input_string
+    def __init__(self, auto, mobj):
+        pass
 
     @abstractmethod
     def from_json(self, rawStr):
@@ -34,7 +36,6 @@ class Automaton_Manager(ABC):
     def next(self):
         pass
 
-
 class DFA_Manager(Automaton_Manager):
     def __init__(self, auto, mobj, input_string = ""):
         # Attributes common to all Automaton_Managers
@@ -46,7 +47,6 @@ class DFA_Manager(Automaton_Manager):
 
         # A little aliasing
         self.dfa = self.auto
-
 
     ## Utility methods, for instantiating a class with just one component ##
     @classmethod
@@ -84,7 +84,6 @@ class DFA_Manager(Automaton_Manager):
 
             vertex_config = {vertex: {"flags": []} for vertex in rawJson["states"]}
             vertex_config[rawJson["initial_state"]]["flags"].append("i")
-            vertex_config[rawJson["initial_state"]]["flags"].append("c")
             
             for vertex in rawJson["final_states"]:
                 vertex_config[vertex]["flags"].append("f")
@@ -116,6 +115,7 @@ class DFA_Manager(Automaton_Manager):
             
             if "f" in mobj.flags[v]:
                 final_states.add(v)
+
 
         auto = DFA(
             states        = set(mobj.vertices),
@@ -422,43 +422,15 @@ class NFA_Manager(Automaton_Manager):
 
     @staticmethod
     def _json_to_mobj_edges(rawJson):
-        print(rawJson)
         new_transitions = copy.deepcopy(rawJson["transitions"])
         edges = list()
         edge_config = dict()
         for start in new_transitions:
             for symbol in new_transitions[start]:
                 endings = new_transitions[start][symbol]
-
-                for end in endings:
-                    edges.append((start, end))
-
-                    if (start, end) not in edge_config:
-                        edge_config[(start, end)] = dict()
-                    edge_config[(start, end)]["label"] = symbol
-        return edges, edge_config
-
-    ## Public methods for interaction ##
-
-    # Returns the possible next states without moving to them. Including a symbol overrides
-    #   the first character of the input string. This is not an option for next()
-    def peek(self, symbol=None):
-        if symbol is None:
-            if len(self.input_string) > 0:
-                symbol = self.input_string[0]
-            else:
-                return None
-
-        if symbol.lower() in ["ep", "epsilon"]:
-            return self.nfa._get_lambda_closures().get(self.current_state)
-        else:
-            nxt = self.nfa._get_next_current_states(self.current_state, symbol).union(self.peek("epsilon"))
-
-            if nxt is None:
                 raise InvalidInputException("That input does not have a defined transition at this state")
             else:
-                print(list(nxt)[0])
-                return list(nxt)[0]
+                return nxt
 
     # Unlike DFA, this behavior is nondeterministic. The caller must choose an ending state based on the peek() method. If the ending state is valid, next() will return that state and update the internal state to it
     def next(self, end):
@@ -468,7 +440,6 @@ class NFA_Manager(Automaton_Manager):
             self.mobj.add_flag(end, "c")
 
             self.current_state = end
-            self.input_string = self.input_string[1:]
         else:
             raise NondeterminismException("Next state requested for NFA, but state was unreachable")
 
@@ -478,6 +449,7 @@ class PDA_Manager(Automaton_Manager):
         self.auto = auto
         self.mobj = mobj
 
+        self.stack = list()
         self.current_state = self.auto.initial_state
         self.input_string = input_string
 
@@ -497,21 +469,69 @@ class PDA_Manager(Automaton_Manager):
         pass
 
 class TM_Manager(Automaton_Manager):
-    def __init__(self, auto, mobj):
-        # Attributes common to all Automaton_Managers
+    def __init__(self, auto, mobj, tape=""):
         self.auto = auto
         self.mobj = mobj
 
-        self.current_state = self.auto.initial_state
-        self.tape = input_string
+        self.tape = tape
 
-        # A little aliasing
+        self.current_state = self.auto.initial_state
+        self.input_string = tape
+
         self.tm = self.auto
 
-    def from_json(self, rawStr):
-        pass
+    @classmethod
+    def from_json(cls, rawStr, tape=""):
+        rawJson = json.loads(rawStr)
 
-    def from_mobj(self, mobj):
+        auto = DTM(
+            states = set(rawJson["states"]),
+            input_symbols = rawJson["input_symbols"],
+            tape_symbols = rawJson["tape_symbols"],
+            blank_symbol = rawJson.get("blank_symbol", "_"), # Default to underscore
+            transitions = rawJson["transitions"],
+            initial_state = rawJson["initial_state"],
+            final_states = set(rawJson["final_states"])
+        )
+
+        vertex_config = {vertex: {"flags": []} for vertex in rawJson["states"]}
+        vertex_config[rawJson["initial_state"]]["flags"].append("i")
+        
+        for vertex in rawJson["final_states"]:
+            vertex_config[vertex]["flags"].append("f")
+
+        edges, edge_config = cls._json_to_mobj_edges(rawJson)
+        mobj = LabeledEdgeDiGraph(
+            vertices      = rawJson["states"],
+            edges         = edges,
+            labels        = True,
+            layout        = "kamada_kawai",
+            vertex_config = vertex_config,
+            edge_config   = edge_config
+        )
+        tapemobj = TuringTape(tape).get_mobject().next_to(mobj, UP*4)
+
+        return cls(auto, VGroup(mobj, tapemobj), tape)
+
+    def _json_to_mobj_edges(rawJson):
+        new_transitions = copy.deepcopy(rawJson["transitions"])
+        edges = list()
+        edge_config = dict()
+        for start in new_transitions:
+            for symbol in new_transitions[start]:
+                ending = new_transitions[start][symbol]
+                end = ending[0]
+
+                edges.append((start, end))
+
+                if (start, end) not in edge_config:
+                    edge_config[(start, end)] = dict()
+                edge_config[(start, end)]["label"] = f"{symbol} \\rightarrow {ending[1]}, {ending[2]}"
+        return edges, edge_config
+
+
+    @classmethod
+    def from_mobj(cls, mobj):
         pass
 
     def peek(self, symbol=None):
