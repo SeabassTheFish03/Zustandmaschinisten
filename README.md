@@ -7,10 +7,6 @@ Additionally, I would recommend that you use the Python package automata-lib (ht
 
 Your project is essentially marrying Manim with automata-lib. This project is more free-form than most, so feel free to take creative liberties as long as they are reasonable. The goal is to eventually turn this into a software product that will be in use in future CS474 offerings and potentially other venues. An existing (but wholly unfinished) library that you may use is manim-automata by SeanNelsonIO: https://github.com/SeanNelsonIO/manim-automata. *Note*: installing manim may be troublesome, so make sure to budget time to do that. There is a bit of a learning curve with using manim, so also budget time for that. 
 
-Phase 1 Projects:
-a. Create manim visualizations of a DFA. In other words, I should be able to input a DFA using automata-lib, and to have an animation that constructs the DFA one state at a time with transitions (in some specified order). This is harder than it seems; how to implement a directed graph (as manim only recently added them at my request), add transition labels, states and final states, etc. You will have to read over the documentation to find out how to modify the base representation of Manim objects. A starting implementation is in the manim-automata github repo.
-b. Create manim visualizations of a DFA running on an input string. What should be present are four screens that operate at the same time: (1) the DFA itself with a box around the current state, (2) a zoomed-in version of what state we are in, (3) the current input string along with what position in the string we are in, and (4) the transition table that highlights what state and symbol is currently being accessed.
-
 ## To set up on your own device:
 This project is set up using a Conda environment, and the order of dependency install is
 `conda install -c conda-forge manim`
