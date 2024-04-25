@@ -4,6 +4,7 @@ import json
 from manim import *
 
 from turingTape import TuringTape
+from automata.base.exceptions import RejectionException
 
 class TestScene(Scene):
     def construct(self):
@@ -23,9 +24,18 @@ class TestScene(Scene):
         with open("turing.json", "r") as f:
             turing = TM_Manager.from_json(f.read(), "000111")
         self.add(turing.mobj)
+        try:
+            for animation in turing.animate():
+                self.play(animation)
+                self.wait(0.5)
+        except RejectionException as e:
+            self.wait(2)
+            self.clear()
+            self.play(Create(Text("Input Rejected")))
+            self.wait(2)
             
 
 if __name__ == "__main__":
-    with tempconfig({"quality": "low_quality", "preview": True}):
+    with tempconfig({"quality": "high_quality", "preview": True}):
         scene = TestScene()
         scene.render()

@@ -33,19 +33,19 @@ class Pumping_Demo(Scene):
         return [Create(self.checklist)]
 
     def anim_step1(self):
-        self.right = Tex("We claim the language $L = 0^n 1^n$\\\\is not regular", font_size=24).shift(3*RIGHT)
+        self.right = Tex("We claim the language $L = 0^n 1^n$\\\\is not regular because the intention of the pumping lemma for regular languages is to assert that $L$ is not accepted by any DFA, which means it is not regular", font_size=24).shift(3*RIGHT)
         anims = [Indicate(self.checklist[0]), FadeIn(self.right)]
         return anims
 
     def anim_step2(self):
-        new_right = Tex("We will do so using contradiction,\\\\via the Pumping Lemma", font_size=24).shift(3*RIGHT)
+        new_right = Tex("We will do so using contradiction,\\\\via the Pumping Lemma for regular languages", font_size=24).shift(3*RIGHT)
         self.remove(self.right)
         anims = [Indicate(self.checklist[1]), FadeIn(new_right)]
         self.right = new_right
         return anims
 
     def anim_step3(self):
-        new_right = Tex("Assume to the contrary there exists some DFA $M$\\\\that has a language of $0^n 1^n$.", font_size=24).shift(3*RIGHT).shift(UP)
+        new_right = Tex("Assume to the contrary there exists some arbitrary DFA $M$\\\\that has a language of $0^n 1^n$.", font_size=24).shift(3*RIGHT).shift(UP)
         self.mobj = self.mobj.shift(2*DOWN).scale(0.5)
         self.remove(self.right)
         anims = [Indicate(self.checklist[2]), Create(self.mobj)]
@@ -59,22 +59,30 @@ class Pumping_Demo(Scene):
         self.right = desc
         return anims
 
-    def anim_step4(self):
-        desc = Tex("Choose the string $L$ using the format $0^p 1^p$.\\\\This guarantees $L$ has a length of at least $p$\\\\and that there are $p$ $0$s, which will\\\\become important later", font_size=24).shift(3*RIGHT).shift(2.5*UP)
+    def anim_step5(self):
+        desc = Tex("Choose the string $w$ using the format $0^p 1^p$.\\\\This guarantees $w$ has a length of at least $p$\\\\and that there are $p$ $0$s, which will\\\\become important later", font_size=24).shift(3*RIGHT).shift(2.5*UP)
         self.l = Tex("$000111$", font_size=24, color="yellow").shift(3*RIGHT).shift(UP)
         self.remove(self.right)
         anims = [Indicate(self.checklist[4]), ReplacementTransform(self.right, desc), Create(self.l)]
         self.right = desc
         return anims
 
-    def anim_step5(self):
-        return [Indicate(self.checklist[5])]
-
     def anim_step6(self):
-        self.remove(self.l)
-        return [Indicate(self.checklist[6]), ReplacementTransform(self.l, MathTex("""x=0^\\alpha, y=0^\\beta, z=1^{p - \\alpha - \\beta}""", font_size=24, color="yellow").move_to(self.l))]
+        desc = Tex("We next observe and state that the pumping lemma for regular languages holds for this string. $w$ is an element of the language of $L$ by definition, and it has a length greater than $p$. Therefore the pumping lemma holds for $w$", font_size=24).shift(3*RIGHT).shift(2.5*UP)
+        self.l = Tex("$000111$", font_size=24, color="yellow").shift(3*RIGHT).shift(UP)
+        self.remove(self.right)
+        anims = [Indicate(self.checklist[5]), ReplacementTransform(self.right, desc), Create(self.l)]
+        self.right = desc
+        return anims
 
     def anim_step7(self):
+        desc = Tex("We next use the pumping lemma rule to identify the different decompositions of $w$ into $x$, $y$, and $z$. We need to determine that all valid possibilities of how $w$ could be split will still break out of the language", font_size=24).shift(3*RIGHT).shift(2.5*UP)
+        self.l = Tex("$000111$", font_size=24, color="yellow").shift(3*RIGHT).shift(UP)
+        self.remove(self.right)
+        self.right = desc
+        return [Indicate(self.checklist[6]), ReplacementTransform(self.l, MathTex("""x=0^\\alpha, y=0^\\beta, z=1^{p - \\alpha - \\beta}""", font_size=24, color="yellow").move_to(self.l))]
+
+    def anim_step8(self):
         self.remove(self.l)
         self.play(Create(Tex("Let $i = 2$", font_size=24, color="red").move_to(self.l).shift(0.5*UP)))
         self.play(Indicate(self.checklist[7]), ShowPassingFlash(self.mobj.edges[('q0', 'q1')].copy()), ReplacementTransform(self.l, MathTex("""y=0^\\beta, z=1^{p-\\alpha-\\beta}""", font_size=24, color="yellow").move_to(self.l)))
@@ -86,7 +94,9 @@ class Pumping_Demo(Scene):
 
         return [ShowPassingFlash(self.mobj.edges[('q1', 'q2')].copy()), Uncreate(self.l)]
 
-    def anim_step8(self):
+    def anim_step9(self):
+        self.remove(self.l)
+        
         return [Indicate(self.checklist[8])]
 
     def construct(self):
@@ -107,6 +117,8 @@ class Pumping_Demo(Scene):
         self.play(*self.anim_step7())
         self.wait()
         self.play(*self.anim_step8())
+        self.wait()
+        self.play(*self.anim_step9())
         self.wait()
 
 def main(args):

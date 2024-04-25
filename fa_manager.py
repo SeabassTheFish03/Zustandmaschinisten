@@ -8,12 +8,15 @@ from automata.fa.dfa import DFA
 from automata.fa.nfa import NFA
 from automata.pda.pda import PDA
 from automata.tm.dtm import DTM
+from automata.tm.tm import TMStateT
+from automata.tm.configuration import TMConfiguration
+from automata.tm.tape import TMTape
 
 from labeledEdgeDiGraph import LabeledEdgeDiGraph
 from turingTape import TuringTape
 from exceptions import EmptyInputException, InvalidInputException
 
-from manim import UP, DOWN, LEFT, RIGHT, VGroup
+from manim import UP, DOWN, LEFT, RIGHT, VGroup, FadeTransform
 
 class Automaton_Manager(ABC):
     @abstractmethod
@@ -443,42 +446,42 @@ class NFA_Manager(Automaton_Manager):
         else:
             raise NondeterminismException("Next state requested for NFA, but state was unreachable")
 
-class PDA_Manager(Automaton_Manager):
-    def __init__(self, auto, mobj):
-        # Attributes common to all Automaton_Managers
-        self.auto = auto
-        self.mobj = mobj
-
-        self.stack = list()
-        self.current_state = self.auto.initial_state
-        self.input_string = input_string
-
-        # A little aliasing
-        self.pda = self.auto
-
-    def from_json(self, rawStr):
-        pass
-
-    def from_mobj(self, mobj):
-        pass
-
-    def peek(self, symbol=None):
-        pass
-
-    def next(self):
-        pass
-
 class TM_Manager(Automaton_Manager):
     def __init__(self, auto, mobj, tape=""):
         self.auto = auto
         self.mobj = mobj
 
-        self.tape = tape
+        self.tape = TuringTape(tape)
 
-        self.current_state = self.auto.initial_state
+        self.current_state = TMConfiguration(self.auto.initial_state, TMTape(tape[0], '.'))
         self.input_string = tape
 
         self.tm = self.auto
+
+    # @classmethod
+    # def _merge_duplicate_edges(cls, rawJson):
+    #     new_transitions = dict()
+    #
+    #     for start in rawJson["transitions"]:
+    #         finishes = list()
+    #         new_transitions[start] = dict()
+    #
+    #         for symbol in rawJson["transitions"][start]:
+    #             focus = rawJson["transitions"][start][symbol]
+    #             finishes.append([f"{symbol} \\rightarrow {focus[1]}, {focus[2]}", rawJson["transitions"][start][symbol]])
+    #         finishes.sort(key=lambda x: x[1][0])
+    #
+    #         compiled = [finishes[0]]
+    #         for finish in finishes[1:]:
+    #             if finish[1][0] == compiled[-1][1][0]:
+    #                 compiled[-1][0] = "\\\\".join([compiled[-1][0], finish[0]])
+    #             else:
+    #                 compiled.append(finish)
+    #         
+    #         for new_edge in compiled:
+    #             new_transitions[start][new_edge[0]] = new_edge[1]
+    #
+    #     return new_transitions
 
     @classmethod
     def from_json(cls, rawStr, tape=""):
@@ -488,7 +491,7 @@ class TM_Manager(Automaton_Manager):
             states = set(rawJson["states"]),
             input_symbols = rawJson["input_symbols"],
             tape_symbols = rawJson["tape_symbols"],
-            blank_symbol = rawJson.get("blank_symbol", "_"), # Default to underscore
+            blank_symbol = rawJson.get("blank_symbol", "."), # Default to .
             transitions = rawJson["transitions"],
             initial_state = rawJson["initial_state"],
             final_states = set(rawJson["final_states"])
@@ -505,16 +508,17 @@ class TM_Manager(Automaton_Manager):
             vertices      = rawJson["states"],
             edges         = edges,
             labels        = True,
-            layout        = "kamada_kawai",
+            layout        = "circular",
             vertex_config = vertex_config,
-            edge_config   = edge_config
-        )
+            edge_config   = edge_config,
+            layout_scale = 2
+        ).shift(DOWN*1.5)
         tapemobj = TuringTape(tape).get_mobject().next_to(mobj, UP*4)
 
         return cls(auto, VGroup(mobj, tapemobj), tape)
 
     def _json_to_mobj_edges(rawJson):
-        new_transitions = copy.deepcopy(rawJson["transitions"])
+        new_transitions = rawJson["transitions"]
         edges = list()
         edge_config = dict()
         for start in new_transitions:
@@ -526,7 +530,20 @@ class TM_Manager(Automaton_Manager):
 
                 if (start, end) not in edge_config:
                     edge_config[(start, end)] = dict()
-                edge_config[(start, end)]["label"] = f"{symbol} \\rightarrow {ending[1]}, {ending[2]}"
+
+                if "label" not in edge_config[(start, end)]:
+                    edge_config[(start, end)]["label"] = list()
+
+                if symbol == ending[1]:
+                    labelstr = f"{symbol} \\rightarrow {ending[2]}"
+                else:
+                    labelstr = f"{symbol} \\rightarrow {ending[1]}, {ending[2]}"
+                edge_config[(start, end)]["label"].append(labelstr.replace(".", "\\_"))
+
+        for (start, end) in edge_config:
+            edge_config[(start, end)]["label"] = ",".join(edge_config[(start, end)]["label"])
+
+        print(edges, edge_config)
         return edges, edge_config
 
 
@@ -534,8 +551,37 @@ class TM_Manager(Automaton_Manager):
     def from_mobj(cls, mobj):
         pass
 
-    def peek(self, symbol=None):
-        pass
+    def peek(self):
+        nxt = self.auto._get_next_configuration(self.current_state)
 
+        if nxt is None:
+            raise InvalidInputException("That input does not have a defined transition at this state")
+        else:
+            return nxt
+
+    # Returns the next state, while updating the internal state to match. There
+    #   is no option to override with a different character
     def next(self):
-        pass
+        # This could raise an InvalidInputException, but I want that to propogate up
+        next_state = self.peek()
+
+        if next_state is None:
+            raise EmptyInputException("There are no characters left in the input string")
+
+        self.mobj[0].remove_flag(self.current_state, "c")
+        self.mobj[0].add_flag(next_state, "c")
+
+        self.tape.index = next_state.tape.current_position
+        self.tape.get_mobject().update()
+
+        self.current_state = next_state
+
+    def animate(self, steps=None):
+        if steps is None:
+            steps = len(self.input_string)
+
+        for i in range(steps):
+            prev_mobj = self.mobj
+            self.next()
+
+            yield FadeTransform(prev_mobj, self.mobj)
