@@ -1,3 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:C:/Git/Zustandmaschinisten/media/videos/480p15/partial_movie_files/DFAScene/1185818338_123802807_1111993989.mp4'
-file 'file:C:/Git/Zustandmaschinisten/media/videos/480p15/partial_movie_files/DFAScene/624642324_1704852926_2067304844.mp4'
