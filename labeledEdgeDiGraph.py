@@ -111,7 +111,7 @@ class LabeledEdgeDiGraph(DiGraph):
                 else:
                     offset = np.array([0, 0, 0])
 
-                edge_label = tmp_edge_conf[(u, v)].pop("label", "_populate_edge_dict fail") 
+                edge_label = tmp_edge_conf[(u, v)].pop("label", "f") 
                 if edge_label == "":
                     edge_label = "\\epsilon"
                 self.edges[(u, v)] = edge_type(
@@ -121,7 +121,7 @@ class LabeledEdgeDiGraph(DiGraph):
                     **tmp_edge_conf[(u, v)]
                 ).shift(offset)
             else:
-                edge_label = tmp_edge_conf[(u, u)].pop("label", "_populate_edge_dict fail")
+                edge_label = tmp_edge_conf[(u, u)].pop("label", "g")
 
                 between = angle_between(self[u].get_center() - self.get_vcenter(), np.array([1, 0, 0]))
                 if self[u].get_center()[1] < self.get_vcenter()[1]:
@@ -146,13 +146,13 @@ class LabeledEdgeDiGraph(DiGraph):
                     color="black",
                     fill_opacity=1,
                     stroke_width=0.5,
-                )
+                ).rotate(-1*between)
                 label_frame = SurroundingRectangle(
                     label_mobject,
                     buff = 0.05,
                     color="white",
                     stroke_width=0.5
-                )
+                ).rotate(-1*between)
                 self.edges[(u, u)] = VGroup(loop, label_frame, label_background, label_mobject).rotate(between, about_point=self[u].get_center())
 
         for (u, v), edge in self.edges.items():
@@ -233,8 +233,8 @@ class LabeledEdgeDiGraph(DiGraph):
         for v in self.vertices:
             if "f" in self.flags[v]:
                 ring = Annulus(
-                    inner_radius = self.vertices[v]["base"].width + 0.1,
-                    outer_radius = self.vertices[v]["base"].width + 0.2,
+                    inner_radius = self.vertices[v]["base"].width + 0.1*self.layout_scale/2,
+                    outer_radius = self.vertices[v]["base"].width + 0.2*self.layout_scale/2,
                     z_index = -1,
                     fill_color="white"
                 ).move_to(self.vertices[v]["base"].get_center()).scale(1/self.layout_scale)
