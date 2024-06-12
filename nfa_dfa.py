@@ -3,7 +3,8 @@ import json
 
 from manim import *
 from labeledEdgeDiGraph import LabeledEdgeDiGraph
-from utils import *
+from utils import JSONToNFA
+
 
 class NFA_DFA_Conversion(Scene):
     def __init__(self, rawJson):
@@ -19,7 +20,7 @@ class NFA_DFA_Conversion(Scene):
             "Remove $\\epsilon$ transitions",
             "Remove nondeterminism",
             "Minify",
-            font_size = 44,
+            font_size=44,
         ).shift(3*LEFT)
 
     def anim_init(self):
@@ -29,9 +30,10 @@ class NFA_DFA_Conversion(Scene):
         self.nfa = self.nfa.eliminate_lambda()
         new_mobj = FAToMobj(self.nfa).shift(3*RIGHT)
 
-        anims = [Indicate(self.checklist[1]), FadeTransform(self.mobj, new_mobj)]
+        anims = [Indicate(self.checklist[1]),
+                 FadeTransform(self.mobj, new_mobj)]
         self.mobj = new_mobj
-        
+
         return anims
 
     def anim_remove_ambig(self):
@@ -42,16 +44,18 @@ class NFA_DFA_Conversion(Scene):
             } for start in self.nfa.transitions
         }
         self.nfa = DFA(
-            states = set(["q" + str(state) for state in self.nfa.states]),
+            states=set(["q" + str(state) for state in self.nfa.states]),
             input_symbols=set(self.nfa.input_symbols),
             transitions=new_transitions,
             initial_state="q" + str(self.nfa.initial_state),
-            final_states = set(["q" + str(state) for state in self.nfa.final_states]),
+            final_states=set(["q" + str(state)
+                             for state in self.nfa.final_states]),
             allow_partial=True
         )
         new_mobj = FAToMobj(self.nfa).shift(3*RIGHT)
 
-        anims = [Indicate(self.checklist[2]), FadeTransform(self.mobj, new_mobj)]
+        anims = [Indicate(self.checklist[2]),
+                 FadeTransform(self.mobj, new_mobj)]
         self.mobj = new_mobj
 
         return anims
@@ -64,16 +68,18 @@ class NFA_DFA_Conversion(Scene):
             } for start in self.nfa.transitions
         }
         self.nfa = DFA(
-            states = set(["q" + str(state) for state in self.nfa.states]),
+            states=set(["q" + str(state) for state in self.nfa.states]),
             input_symbols=set(self.nfa.input_symbols),
             transitions=new_transitions,
             initial_state="q" + str(self.nfa.initial_state),
-            final_states = set(["q" + str(state) for state in self.nfa.final_states]),
+            final_states=set(["q" + str(state)
+                             for state in self.nfa.final_states]),
             allow_partial=True
         )
         new_mobj = FAToMobj(self.nfa).shift(3*RIGHT)
 
-        anims = [Indicate(self.checklist[3]), FadeTransform(self.mobj, new_mobj)]
+        anims = [Indicate(self.checklist[3]),
+                 FadeTransform(self.mobj, new_mobj)]
         self.mobj = new_mobj
 
         return anims
@@ -89,6 +95,7 @@ class NFA_DFA_Conversion(Scene):
         self.play(*self.anim_minify())
         self.wait(2)
 
+
 def main(args):
     if len(sys.argv) == 2 or len(sys.argv) == 3:
         nfaFilename = sys.argv[1]
@@ -97,7 +104,8 @@ def main(args):
         else:
             picture_quality = "low_quality"
     else:
-        print("Usage: python nfa_dfa.py <NFA.json> [picture_quality (default low)]")
+        print(
+            "Usage: python nfa_dfa.py <NFA.json> [picture_quality (default low)]")
         exit(code=2)
 
     with open(nfaFilename, "r") as f:
@@ -110,6 +118,7 @@ def main(args):
     with tempconfig({"quality": picture_quality, "preview": True}):
         scene = NFA_DFA_Conversion(rawJson)
         scene.render()
+
 
 if __name__ == "__main__":
     main(sys.argv)

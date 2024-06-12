@@ -524,9 +524,9 @@ class TM_Manager(Automaton_Manager):
 
                 edges.append((start, end))
 
-                if (start, end) not in edge_config:
-                    edge_config[(start, end)] = dict()
-                edge_config[(start, end)]["label"] = f"{symbol} \\rightarrow {ending[1]}, {ending[2]}"
+                if (start, end, symbol) not in edge_config:
+                    edge_config[(start, end, symbol)] = dict()
+                edge_config[(start, end, symbol)]["label"] = f"{symbol} \\rightarrow {ending[1]}, {ending[2]}"
         return edges, edge_config
 
 

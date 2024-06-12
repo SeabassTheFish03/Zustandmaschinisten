@@ -100,9 +100,9 @@ class LabeledEdgeDiGraph(DiGraph):
         tmp_edge_conf = deepcopy(self._edge_config)
 
         self.edges = dict()
-        for (u, v) in edges:
+        for (u, v, symbol) in edges:
             if u != v:
-                if (v, u) in edges:
+                if (v, u) in list(map(lambda (x,y,s): (x,y), edges)):
                     vec1 = self[v].get_center() - self[u].get_center()
                     vec2 = np.cross(vec1, np.array([0, 0, 1]))
 
