@@ -1,7 +1,11 @@
 import json
+import sys
 
 from dsl_errors import MalformedCommandError, TypeNotRecognizedError
 from fa_manager import DFA_Manager, NFA_Manager, TM_Manager
+
+# NOTE: This shouldn't run ridiculously slow, but a potential speedup
+#   I see is running each LOAD instruction concurrently.
 
 
 def read_file(filename):
@@ -27,6 +31,11 @@ def load_from_file(filename, varname, env):
             f'JSON claims type {rawJson["type"]}, which is not a valid type.'
         )
 
+    if varname in env:
+        print(
+            f"Overwrote existing FA at {varname}",
+            file=sys.stderr,
+        )
     env[varname] = created
 
 
@@ -50,3 +59,4 @@ if __name__ == "__main__":
     env = dict()
 
     triageLine("LOAD \"hell yeah brother\" AS hyb", env)
+    print(env)
