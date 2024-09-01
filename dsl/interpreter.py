@@ -1,8 +1,13 @@
+from ...fa_manager import DFA_Manager, NFA_Manager, TM_Manager
 import json
 import sys
 
-from dsl_errors import MalformedCommandError, TypeNotRecognizedError
-from fa_manager import DFA_Manager, NFA_Manager, TM_Manager
+from pathlib import Path
+
+from dsl_errors import \
+    MalformedCommandError, \
+    TypeNotRecognizedError, \
+    TypeNotSpecifiedError
 
 # NOTE: This shouldn't run ridiculously slow, but a potential speedup
 #   I see is running each LOAD instruction concurrently.
@@ -19,6 +24,9 @@ def read_file(filename):
 def load_from_file(filename, varname, env):
     with open(filename, "r") as f:
         rawJson = json.loads(f.read())
+
+    if "type" not in rawJson:
+        raise TypeNotSpecifiedError()
 
     if rawJson["type"].lower() == "dfa":
         created = DFA_Manager.from_json(rawJson)
@@ -56,6 +64,17 @@ def triageLine(line, env):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        infile = Path(input("Input file path: "))
+    elif len(sys.argv) == 2:
+        infile = Path(sys.argv[1])
+    else:
+        print(
+            "Usage: interpreter.py [infile]",
+            file=sys.stderr
+        )
+        exit(1)
+
     env = dict()
 
     triageLine("LOAD \"hell yeah brother\" AS hyb", env)

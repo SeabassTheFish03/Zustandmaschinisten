@@ -10,7 +10,19 @@ class MalformedCommandError(DSL_Error):
     pass
 
 
+class TypeNotSpecifiedError(DSL_Error):
+    """The FA type was not specified"""
+
+    pass
+
+
+class TypeNotRecognizedError(DSL_Error):
+    """The type specified is not recognized"""
+
+    pass
+
+
 class DoesNotExistError(DSL_Error):
-    """Someone attempted to make reference to an object that does not exist in the context"""
+    """Referenced an object that does not exist in the context"""
 
     pass
