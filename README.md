@@ -1,5 +1,5 @@
 # Deprecated!
-This repo is now deprecated. The link to the new repo will be posted here once available. Do not try to use in current state, it won't work!
+This repo is now deprecated. If you are looking for TheoryViz, the link to the new repo will be posted here once available. Do not try to use in current state, it won't work! I'm leaving it public for posterity.
 
 # Finite State Machine with Input and Process Render (FSMIPR)
 Creating a visualizer for Finite State Machines in Python using automata-lib and manim
